@@ -23,6 +23,7 @@ create or replace PROCEDURE InsertEmployee (p_first_name IN VARCHAR2,
     JOB_NOT_FOUND_EXCEPTION EXCEPTION;
     SALARY_OUT_OF_SCOPE_EXCEPTION EXCEPTION;
     FUTURE_DATE_EXCEPTION EXCEPTION;
+    PHONE_NUMBER_PATTERN_EXCEPTION EXCEPTION;
     
 BEGIN
     -- WARUNKI DO STAWIANIA WYJATKU
@@ -79,6 +80,10 @@ BEGIN
         RAISE FUTURE_DATE_EXCEPTION;
     END IF;
     
+    -- 7. STAWIANIE WYJATKU NUMERU TELEOFNU NIE PASUJACEGO DO WZORCA
+    IF p_phone_number NOT LIKE '%%%.%%%.%%%%' AND p_phone_number NOT LIKE '%%%.%%.%%%%.%%%%%%' THEN
+        RAISE PHONE_NUMBER_PATTERN_EXCEPTION;
+    END IF;
 
     INSERT INTO EMPLOYEES (EMPLOYEE_ID,
                            FIRST_NAME,
@@ -116,48 +121,10 @@ EXCEPTION
         RAISE_APPLICATION_ERROR (-20095, 'Podano wartoœæ zarobków przekraczajaca zakres przysluigujacy na wskazanym stanowisku');
     WHEN FUTURE_DATE_EXCEPTION THEN
         RAISE_APPLICATION_ERROR (-20094, 'Podano przyszla datê zatrudnienia');
-
+    WHEN PHONE_NUMBER_PATTERN_EXCEPTION THEN
+        RAISE_APPLICATION_ERROR (-20093, 'Podano numer telefonu nie pasujacy do szablonu');
+        
 
 END;
 /
 SHOW ERROR;
-
-
-
---Testy:
-
--- 1. NULL_EXCEPTION
--- a) WARTOŒCI NULL W MIEJSCACH NOT NULL
-BEGIN
-    INSERTEMPLOYEE('Milosz', NULL, 'mparszewski', '465.465.465', sysdate, NULL, 78940, 0, 120, 50);
-END;
-
--- b) WARTOŒCI NULL W MIEJSCACH DOZWOLONYCH:
-BEGIN
-    INSERTEMPLOYEE('Milosz', 'PARSZEWSKI', 'mparszewski', '465.465.465', sysdate, 'SH_CLERK', NULL, 0, 120, 50);
-END;
-
--- 2. BIEWLAŒCIWY LUB NIEISTNIEJACY KOD PRZELOZONEGO
-BEGIN
-    INSERTEMPLOYEE('Milosz', 'Parszewski', 'mparszewski', '465.465.465', sysdate, 'SH_CLERK', 50000, 0, null, 50);
-END;
-
--- 3. NIESISTNIEJACY KOD DEPARTAMENTU
-BEGIN
-    INSERTEMPLOYEE('Adam', 'Nowak', 'anowak', '968.415.265', sysdate, 'SH_CLERK', 50000, 0, 192, 300);
-END;
-
--- 4. NIEISTNIEJACY KOD STANOWISKA
-BEGIN
-    INSERTEMPLOYEE('Piotr', 'Nowak', 'PNOWAK', '789,456,123', sysdate, 'BD_ORA', 50000, 0, 192, 240);
-END;
-
--- 5. ZAROBKI SPOZA ZAKRESU
-BEGIN 
-    INSERTEMPLOYEE('Marek', 'Nowak', 'MNOWAK', '789,456,123', sysdate, 'SH_CLERK', 6500, 0, 192, 240);
-END;
-
--- 6. PRZYSZLA DATA ZATRUDNIENIA
-BEGIN
-    INSERTEMPLOYEE('Marek', 'Nowak', 'MNOWAK', '789,456,123', '19/05/30', 'SH_CLERK', 3500, 0, 192, 240);
-END;
